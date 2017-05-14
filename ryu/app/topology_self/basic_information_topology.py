@@ -59,13 +59,19 @@ class test_wpq(app_manager.RyuApp):
         ofp = datapath.ofproto
         parser = datapath.ofproto_parser
 
-        inst = [parser.OFPInstructionActions(ofp.OFPIT_APPLY_ACTIONS,
-                                             actions)]
+        if ofp.OFP_VERSION == ofproto_v1_0.OFP_VERSION:
+            mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
+                                    idle_timeout=idle_timeout,
+                                    hard_timeout=hard_timeout,
+                                    match=match, actions=actions)
+        elif ofp.OFP_VERSION >= ofproto_v1_2.OFP_VERSION:
+            inst = [parser.OFPInstructionActions(ofp.OFPIT_APPLY_ACTIONS,
+                                                 actions)]
+            mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
+                                    idle_timeout=idle_timeout,
+                                    hard_timeout=hard_timeout,
+                                    match=match, instructions=inst)
 
-        mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
-                                idle_timeout=idle_timeout,
-                                hard_timeout=hard_timeout,
-                                match=match, instructions=inst)
 
         datapath.send_msg(mod)
 
@@ -101,10 +107,11 @@ class test_wpq(app_manager.RyuApp):
     def packetin_handler(self, ev):
         # print ev.msg
         msg = ev.msg
+        print msg
         pkt = packet.Packet(msg.data)
         # print pkt.get_protocols
         dpid = msg.datapath.id
-        port = msg.match['in_port']
+        #port = msg.match['in_port']
         self.get_topology(None)
 
 
@@ -149,7 +156,7 @@ class test_wpq(app_manager.RyuApp):
                 print "        ", "%23s" % " ",
                 for port_no in self.switch_port_table[dpid]:
                     if self.host_or_switch[(dpid, port_no)] == 2:
-                        print " ipv4 :", self.link_to_port[(dpid, port_no)][1],
+                        print " ipv4 :", self.link_to_port[(dpid, port_no)][1], "%6s" % " ",
                     else:
                         print "%28s" % " ",
                 print
@@ -160,5 +167,5 @@ class test_wpq(app_manager.RyuApp):
 
         print "------------------" * 8
         print ""
-        print ""
-        print ""
+	print ""
+	print ""
